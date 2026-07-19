@@ -1,4 +1,5 @@
 /*------------------------------------------------------------------------------
+Copyright (c) 2026 Korbosoft
 Copyright (c) 2010-2026 The GRRLIB Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,29 +20,23 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ------------------------------------------------------------------------------*/
-// Required hack before including mikmod headers
-// This is because libogc and libmikmod both defines BOOL
-#define _MIKMOD_OS2 1
-typedef char CHAR;
-typedef unsigned long int ULONG;
 
 #include "GRRMOD_internals.h"
-#include "mikmod/include/mikmod.h"
+#include <libopenmpt/libopenmpt.h>
+#include <stdlib.h>
 #include <string.h>
-
-// This is normally in the mikmod.h file of the MikMod project
-MIKMODAPI extern struct MDRIVER drv_wii; /* Wii driver. */
 
 typedef struct _GRRMOD_DATA {
     char *ModType;    /**< A string representing the MOD type. */
     char *SongTitle;  /**< A string representing the song title. */
+    u32 SampleRate;   /**< Sampling rate frequency. */
 } GRRMOD_DATA;
 
 static GRRMOD_DATA MusicData = {};
-static MODULE *module = NULL;   /**< Module structure. */
+static openmpt_module *mod = NULL;   /**< Module structure. */
 
-static u8 *pBuffer; /**< Pointer to the sound buffer. */
-static u8 **ppBuffer = &pBuffer; /**< Pointer to the sound buffer pointer. */
+static bool paused = false;
+static bool isStereo;
 
 /**
  * Register MOD function list.
@@ -49,7 +44,7 @@ static u8 **ppBuffer = &pBuffer; /**< Pointer to the sound buffer pointer. */
  */
 void GRRMOD_MOD_Register(GRRMOD_FuntionsList *RegFunc) {
     RegFunc->Init = GRRMOD_MOD_Init;
-    RegFunc->End = GRRMOD_MOD_End;
+    RegFunc->End = GRRMOD_MOD_Unload;
     RegFunc->SetMOD = GRRMOD_MOD_SetMOD;
     RegFunc->Unload = GRRMOD_MOD_Unload;
     RegFunc->SetFrequency = GRRMOD_MOD_SetFrequency;
@@ -67,39 +62,18 @@ void GRRMOD_MOD_Register(GRRMOD_FuntionsList *RegFunc) {
 /**
  * Initialize MOD library.
  * @param stereo If set to true the music will play in stereo, otherwise it will mono.
- * @return A number representating a code:
- *         -     0 : The operation completed successfully.
- *         -    -1 : Failed to initialize the MOD engine.
- * @see GRRMOD_MOD_End
+ - * @return A number re*presentating a code:
+ - *         -     0 : The operation completed successfully.
+ - *         -    -1 : Failed to initialize the MOD engine.
+ - * @see GRRMOD_MOD_End
  */
 s8 GRRMOD_MOD_Init(bool stereo) {
-    MikMod_RegisterDriver(&drv_wii);
-    MikMod_RegisterAllLoaders();
-    md_device = 1; // Only one device is used
-
-    md_mode = DMODE_16BITS |
-              DMODE_HQMIXER |
-              DMODE_SOFT_MUSIC |
-              DMODE_SOFT_SNDFX;
-
-    if(stereo == true) {
-        md_mode |= DMODE_STEREO; //this causes some modules (s3m mostly) to play back incorrectly on Wii
-    }
-
-    char CommandLine[35] = {};
-    sprintf(CommandLine, "buffer=%d,size=%d", (int)ppBuffer, SNDBUFFERSIZE);
-    if(MikMod_Init(CommandLine) != 0) {
-        return -1;
+    isStereo = stereo;
+    paused = false;
+    if (MusicData.SampleRate == 0) {
+        MusicData.SampleRate = 48000; // Safe default hardware rate for Wii
     }
     return 0;
-}
-
-/**
- * Call this before exiting your application.
- * Ensure this function is only ever called once.
- */
-void GRRMOD_MOD_End(void) {
-    MikMod_Exit();
 }
 
 /**
@@ -108,15 +82,16 @@ void GRRMOD_MOD_End(void) {
  * @param size Size of the memory to set.
  */
 void GRRMOD_MOD_SetMOD(const void *mem, u64 size) {
-    if(module != NULL) {
+    if(mod != NULL) {
         GRRMOD_MOD_Unload();
     }
-    FILE *File = fmemopen((void *)mem, size, "rb");
-    module = Player_LoadFP(File, 128, 0);
-    if(module != NULL) {
-        module->wrap = true; // The module will restart when it's finished
-        MusicData.SongTitle = strdup(module->songname);
-        MusicData.ModType = strdup(module->modtype);
+
+    mod = openmpt_module_create_from_memory2(mem, size, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+
+    if(mod != NULL) {
+        MusicData.SongTitle = strdup(openmpt_module_get_metadata(mod, "title"));
+        MusicData.ModType = strdup(openmpt_module_get_metadata(mod, "type"));
+        openmpt_module_set_repeat_count(mod, -1);
     }
 }
 
@@ -124,9 +99,9 @@ void GRRMOD_MOD_SetMOD(const void *mem, u64 size) {
  * Unload a MOD file.
  */
 void GRRMOD_MOD_Unload(void) {
-    if(module != NULL) {
-        Player_Free(module);
-        module = NULL;
+    if(mod != NULL) {
+        openmpt_module_destroy(mod);
+        mod = NULL;
     }
     if(MusicData.ModType != NULL) {
         free(MusicData.ModType);
@@ -142,86 +117,78 @@ void GRRMOD_MOD_Unload(void) {
  * This function starts the specified module playback.
  */
 void GRRMOD_MOD_Start(void) {
-    if(module == NULL) {
-        return;
+    if(mod != NULL) {
+        openmpt_module_set_position_order_row(mod, 0, 0);
+        paused = false;
     }
-
-    Player_Start(module);
 }
 
 /**
  * This function stops the currently playing module.
  */
 void GRRMOD_MOD_Stop(void) {
-    Player_SetPosition(0);
-    Player_Stop();
+    if(mod != NULL) {
+        openmpt_module_set_position_order_row(mod, 0, 0);
+        paused = true;
+    }
 }
 
 /**
  * This function toggles the playing/paused status of the module.
  */
 void GRRMOD_MOD_Pause(void) {
-    Player_TogglePause();
+    paused = !paused;
 }
 
-/**
- * Get the song title.
- * @return Pointer to the song title.
- */
-char *GRRMOD_MOD_GetSongTitle(void) {
-    return MusicData.SongTitle;
-}
+char *GRRMOD_MOD_GetSongTitle(void) { return MusicData.SongTitle; }
+char *GRRMOD_MOD_GetModType(void) { return MusicData.ModType; }
 
 /**
- * Get the MOD type.
- * @return Pointer to the MOD type.
- */
-char *GRRMOD_MOD_GetModType(void) {
-    return MusicData.ModType;
-}
-
-/**
- * Set the frequency. Values are harcoded at 48000Hz.
- * @param freq Frequency to set in kHz.
+ * Set the frequency.
+ * @param freq Frequency to set in Hz.
  */
 void GRRMOD_MOD_SetFrequency(u32 freq) {
-    md_mixfreq = freq;
+    MusicData.SampleRate = (freq > 0) ? freq : 48000;
 }
 
-/**
- * This function returns the frequency of the sample currently playing on the specified voice.
- * @param voice The number of the voice to get frequency.
- * @return The current frequency of the sample playing on the specified voice, or zero if no sample is currently playing on the voice.
- */
-u32 GRRMOD_MOD_GetVoiceFrequency(u8 voice) {
-    return Voice_GetFrequency(voice);
-}
-
-/**
- * This function returns the volume of the sample currently playing on the specified voice.
- * @param voice The number of the voice to get volume.
- * @return The current volume of the sample playing on the specified voice, or zero if no sample is currently playing on the voice.
- */
-u32 GRRMOD_MOD_GetVoiceVolume(u8 voice) {
-    return Voice_GetVolume(voice);
-}
-
-/**
- * This function returns the actual playing volume of the specified voice.
- * @param voice The number of the voice to analyze (starting from zero).
- * @return The real volume of the voice when the function was called, in the range 0-65535.
- */
-u32 GRRMOD_MOD_GetRealVoiceVolume(u8 voice) {
-    return Voice_RealVolume(voice);
-}
+u32 GRRMOD_MOD_GetVoiceFrequency(u8 voice) { return 0; }
+u32 GRRMOD_MOD_GetVoiceVolume(u8 voice) { return 0; }
+u32 GRRMOD_MOD_GetRealVoiceVolume(u8 voice) { return 0; }
 
 /**
  * Set a buffer to update. This routine should be called on a regular basis to update the sound.
  * @param buffer The buffer to update.
  */
 void GRRMOD_MOD_Update(u8 *buffer) {
-    if(module != NULL) {
-        pBuffer = buffer; // Point to the new sound buffer
-        MikMod_Update();
+    if (mod == NULL || buffer == NULL) {
+        return;
     }
+
+    if (paused) {
+        memset(buffer, 0, SNDBUFFERSIZE);
+        return;
+    }
+
+    static s16 aligned_buffer[SNDBUFFERSIZE / 2];
+    size_t frames_rendered = 0;
+
+    if (isStereo) {
+        size_t frames_to_render = SNDBUFFERSIZE / 4;
+
+        frames_rendered = openmpt_module_read_interleaved_stereo(mod, MusicData.SampleRate, frames_to_render, aligned_buffer);
+
+        if (frames_rendered < frames_to_render) {
+            memset(aligned_buffer + (frames_rendered * 2), 0, (frames_to_render - frames_rendered) * 4);
+        }
+    } else {
+        size_t frames_to_render = SNDBUFFERSIZE / 2;
+
+        frames_rendered = openmpt_module_read_mono(mod, MusicData.SampleRate, frames_to_render, aligned_buffer);
+
+        if (frames_rendered < frames_to_render) {
+            memset(aligned_buffer + frames_rendered, 0, (frames_to_render - frames_rendered) * 2);
+        }
+    }
+
+    memcpy(buffer, aligned_buffer, SNDBUFFERSIZE);
 }

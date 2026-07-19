@@ -35,7 +35,7 @@ LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 # the order can-be/is critical
 #---------------------------------------------------------------------------------
 LIBS	:= -lgrrlib -lpngu `$(PREFIX)pkg-config freetype2 libpng libjpeg --libs` -lfat
-LIBS	+= -lgrrmod -laesnd
+LIBS	+= -lgrrmod -lopenmpt -lvorbisfile -lvorbis -logg -lmpg123 -lstdc++ -laesnd
 LIBS	+= -lwiiuse -lbte -logc -lm
 
 #---------------------------------------------------------------------------------

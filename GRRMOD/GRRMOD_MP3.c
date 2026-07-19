@@ -23,6 +23,7 @@ THE SOFTWARE.
 #include "GRRMOD_internals.h"
 #include "mpg123.h"
 #include <string.h>
+#include <stdlib.h>
 
 #define MP3_READ_SIZE 1024
 

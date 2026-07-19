@@ -1,31 +1,9 @@
-# GRRMOD
+# grrmod-mpt
 
-[![Actions Status](https://github.com/GRRLIB/GRRMOD/workflows/Continuous%20Integration/badge.svg)](https://github.com/GRRLIB/GRRMOD/actions)
-[![Documentation](https://codedocs.xyz/GRRLIB/GRRMOD.svg)](https://codedocs.xyz/GRRLIB/GRRMOD/)
+GRRMOD forked to use libopenmpt
 
-GRRMOD is a MOD player library for Wii application developers.
-
-It supports the following formats:
-
-* 669 (Composer 669)
-* AMF (DSMI Advanced Module Format)
-* AMF (ASYLUM Music Format V1.0)
-* APUN (APlayer)
-* DSM (DSIK internal format)
-* FAR (Farandole Composer)
-* GDM (General DigiMusic)
-* IMF (Imago Orpheus)
-* IT (Impulse Tracker)
-* MED (OctaMED)
-* MOD (15 and 31 instruments)
-* MTM (MultiTracker Module editor)
-* OKT (Amiga Oktalyzer)
-* S3M (Scream Tracker 3)
-* STM (Scream Tracker)
-* STX (Scream Tracker Music Interface Kit)
-* ULT (UltraTracker)
-* UNI (MikMod)
-* XM (FastTracker 2)
+<!--[![Actions Status](https://github.com/GRRLIB/GRRMOD/workflows/Continuous%20Integration/badge.svg)](https://github.com/GRRLIB/GRRMOD/actions)
+[![Documentation](https://codedocs.xyz/GRRLIB/GRRMOD.svg)](https://codedocs.xyz/GRRLIB/GRRMOD/)-->
 
 ## Installing GRRMOD
 
@@ -60,7 +38,7 @@ at the top of your .c/.cpp file and use the functions as required
 You will also need to add
 
 ```make
--lgrrmod -laesnd
+-lgrrmod -lopenmpt -lvorbisfile -lvorbis -logg -lmpg123 -lstdc++
 ```
 
 to the libs line in your makefile

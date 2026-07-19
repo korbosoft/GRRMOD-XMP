@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(grrmod VERSION 0.0.1)
+project(grrmod-mpt VERSION 0.0.1)
 
 option(GRRMOD_INSTALL "Generate the install target" ON)
 option(GRRMOD_USE_MOD "Enable MOD support" ON)
@@ -12,16 +12,14 @@ find_library(AESND aesnd
   REQUIRED
 )
 
+find_library(OPENMPT openmpt
+  PATHS "${OGC_ROOT}/../portlibs/ppc/lib/"
+  REQUIRED
+)
+
 if(GRRMOD_USE_MOD)
   file(GLOB MOD_SRC_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/GRRMOD_MOD.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/mikmod/drivers/drv_nos.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/mikmod/drivers/drv_wii.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/mikmod/loaders/*.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/mikmod/mmio/*.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/mikmod/playercode/*.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/mikmod/depackers/*.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/mikmod/posix/*.c"
   )
 endif()
 if(GRRMOD_USE_MP3)
@@ -31,22 +29,22 @@ if(GRRMOD_USE_MP3)
   )
 endif()
 
-add_library(grrmod STATIC)
+add_library(grrmod-mpt STATIC)
 
-target_compile_options(grrmod
+target_compile_options(grrmod-mpt
   PRIVATE
   -Wall
   -Wunused
 )
 
-target_sources(grrmod
+target_sources(grrmod-mpt
   PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/GRRMOD_core.c"
   "${MOD_SRC_FILES}"
   "${MP3_SRC_FILES}"
 )
 
-target_compile_options(grrmod PRIVATE
+target_compile_options(grrmod-mpt PRIVATE
   -DHAVE_FCNTL_H -DHAVE_INTTYPES_H -DHAVE_LIMITS_H -DHAVE_MALLOC_H
   -DHAVE_MEMCMP -DHAVE_SETENV -DHAVE_SNPRINTF -DHAVE_STDINT_H
   -DHAVE_STDLIB_H -DHAVE_STRCASECMP -DHAVE_STRDUP -DHAVE_STRINGS_H
@@ -57,38 +55,40 @@ target_compile_options(grrmod PRIVATE
   -DHAVE_SYS_RESOURCE_H
 )
 if(GRRMOD_USE_MP3)
-  target_compile_options(grrmod PRIVATE
+  target_compile_options(grrmod-mpt PRIVATE
     -DOPT_GENERIC
     -DREAL_IS_FLOAT
   )
 endif()
 
-target_include_directories(grrmod
+target_include_directories(grrmod-mpt
   PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/GRRMOD"
+  "$<BUILD_INTERFACE:${OGC_ROOT}/../portlibs/ppc/include>"
   PRIVATE
-  "${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/mikmod/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/mpg123"
 )
 
-target_link_libraries(grrmod PRIVATE
+target_link_libraries(grrmod-mpt
+  PUBLIC
   ${AESND}
+  ${OPENMPT}
 )
 
 if(GRRMOD_INSTALL)
 
-  configure_file(grrmod.pc.in ${CMAKE_BINARY_DIR}/grrmod.pc @ONLY)
+  configure_file(grrmod-mpt.pc.in ${CMAKE_BINARY_DIR}/grrmod-mpt.pc @ONLY)
 
-  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/grrmod.h
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/grrmod-mpt.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   )
 
-  install(FILES ${CMAKE_BINARY_DIR}/grrmod.pc
+  install(FILES ${CMAKE_BINARY_DIR}/grrmod-mpt.pc
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
   )
 
   install(
-    TARGETS grrmod EXPORT grrmod-targets
+    TARGETS grrmod-mpt EXPORT grrmod-mpt-targets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
 

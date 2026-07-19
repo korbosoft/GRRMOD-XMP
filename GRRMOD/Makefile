@@ -48,11 +48,11 @@ USE_MP3		:=	yes
 # HDR is a list of header files needed for installation
 # CFILES is a list of c files for our project
 #---------------------------------------------------------------------------------
-TARGET		:=	libgrrmod
+TARGET		:=	libgrrmod-mpt
 BUILD		:=	build
 SOURCES		:=	
 INCLUDES	:=	
-HDR			:=	grrmod.h
+HDR		:=	grrmod-mpt.h
 CFILES		:=	GRRMOD_core.c
 
 #---------------------------------------------------------------------------------
@@ -68,8 +68,6 @@ CFLAGS		+=	-DHAVE_FCNTL_H -DHAVE_INTTYPES_H -DHAVE_LIMITS_H -DHAVE_MALLOC_H \
 				-DHAVE_SYS_RESOURCE_H
 ifeq ($(USE_MOD),yes)
 	CFILES		+=	GRRMOD_MOD.c
-	SOURCES		+=	mikmod/drivers mikmod/loaders mikmod/mmio mikmod/playercode mikmod/depackers mikmod/posix
-	INCLUDES	+=	mikmod/include
 	CFLAGS		+=	
 endif
 ifeq ($(USE_MP3),yes)
@@ -89,13 +87,13 @@ CXXFLAGS	:=	$(CFLAGS)
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-laesnd
+LIBS	:=	-lopenmpt -laesnd
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:=
+LIBDIRS	:= $(DEVKITPRO)/portlibs/ppc
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
