@@ -23,6 +23,7 @@ THE SOFTWARE.
 
 #include "GRRMOD_internals.h"
 #include <libopenmpt/libopenmpt.h>
+#include <libopenmpt/libopenmpt_ext.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -33,11 +34,15 @@ typedef struct _GRRMOD_DATA {
 } GRRMOD_DATA;
 
 static GRRMOD_DATA MusicData = {};
+
+static openmpt_module_ext *mod_ext = NULL;
 static openmpt_module *mod = NULL;   /**< Module structure. */
 
 static bool paused = false;
 static bool isStereo;
 
+static openmpt_module_ext_interface_interactive interactive_api;
+static bool has_interactive_api = false;
 /**
  * Register MOD function list.
  * @param RegFunc The function list to register.
@@ -71,7 +76,7 @@ s8 GRRMOD_MOD_Init(bool stereo) {
     isStereo = stereo;
     paused = false;
     if (MusicData.SampleRate == 0) {
-        MusicData.SampleRate = 48000; // Safe default hardware rate for Wii
+        MusicData.SampleRate = 48000;
     }
     return 0;
 }
@@ -82,16 +87,27 @@ s8 GRRMOD_MOD_Init(bool stereo) {
  * @param size Size of the memory to set.
  */
 void GRRMOD_MOD_SetMOD(const void *mem, u64 size) {
-    if(mod != NULL) {
+    if(mod_ext != NULL) {
         GRRMOD_MOD_Unload();
     }
 
-    mod = openmpt_module_create_from_memory2(mem, size, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    mod_ext = openmpt_module_ext_create_from_memory(mem, size, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
-    if(mod != NULL) {
+    if(mod_ext != NULL) {
+        mod = openmpt_module_ext_get_module(mod_ext);
+
         MusicData.SongTitle = strdup(openmpt_module_get_metadata(mod, "title"));
         MusicData.ModType = strdup(openmpt_module_get_metadata(mod, "type"));
         openmpt_module_set_repeat_count(mod, -1);
+
+        int loaded_api = openmpt_module_ext_get_interface(
+            mod_ext,
+            LIBOPENMPT_EXT_C_INTERFACE_INTERACTIVE,
+            &interactive_api,
+            sizeof(interactive_api)
+        );
+
+        has_interactive_api = (loaded_api == 1) && (interactive_api.get_channel_volume != NULL);
     }
 }
 
@@ -99,10 +115,13 @@ void GRRMOD_MOD_SetMOD(const void *mem, u64 size) {
  * Unload a MOD file.
  */
 void GRRMOD_MOD_Unload(void) {
-    if(mod != NULL) {
-        openmpt_module_destroy(mod);
+    if(mod_ext != NULL) {
+        openmpt_module_ext_destroy(mod_ext);
+        mod_ext = NULL;
         mod = NULL;
     }
+    has_interactive_api = false;
+
     if(MusicData.ModType != NULL) {
         free(MusicData.ModType);
         MusicData.ModType = NULL;
@@ -152,8 +171,24 @@ void GRRMOD_MOD_SetFrequency(u32 freq) {
 }
 
 u32 GRRMOD_MOD_GetVoiceFrequency(u8 voice) { return 0; }
-u32 GRRMOD_MOD_GetVoiceVolume(u8 voice) { return 0; }
-u32 GRRMOD_MOD_GetRealVoiceVolume(u8 voice) { return 0; }
+
+u32 GRRMOD_MOD_GetVoiceVolume(u8 voice) {
+    if (mod == NULL || !has_interactive_api || voice < 0 || voice >= openmpt_module_get_num_channels(mod)) {
+        return 0;
+    }
+
+    double literal_vol = interactive_api.get_channel_volume(mod_ext, voice);
+    return (u32)(literal_vol * 64.0);
+}
+
+u32 GRRMOD_MOD_GetRealVoiceVolume(u8 voice) {
+    if (mod == NULL || voice >= openmpt_module_get_num_channels(mod)) {
+        return 0;
+    }
+
+    double vu_amplitude = openmpt_module_get_current_channel_vu_mono(mod, voice);
+    return (u32)(vu_amplitude * 255.0);
+}
 
 /**
  * Set a buffer to update. This routine should be called on a regular basis to update the sound.
