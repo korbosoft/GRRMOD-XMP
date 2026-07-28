@@ -71,7 +71,7 @@ s8 GRRMOD_MOD_Init(bool stereo) {
     isStereo = stereo;
     paused = false;
     if (MusicData.SampleRate == 0) {
-        MusicData.SampleRate = 48000;
+        MusicData.SampleRate = 32000;
     }
     return 0;
 }
@@ -92,6 +92,11 @@ void GRRMOD_MOD_SetMOD(const void *mem, u64 size) {
         MusicData.SongTitle = strdup(openmpt_module_get_metadata(mod, "title"));
         MusicData.ModType = strdup(openmpt_module_get_metadata(mod, "type"));
         openmpt_module_set_repeat_count(mod, -1);
+        openmpt_module_set_render_param(
+            mod,
+            OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH,
+            2
+        );
     }
 }
 
@@ -148,7 +153,7 @@ char *GRRMOD_MOD_GetModType(void) { return MusicData.ModType; }
  * @param freq Frequency to set in Hz.
  */
 void GRRMOD_MOD_SetFrequency(u32 freq) {
-    MusicData.SampleRate = (freq > 0) ? freq : 48000;
+    MusicData.SampleRate = (freq > 0) ? freq : 32000;
 }
 
 u32 GRRMOD_MOD_GetVoiceFrequency(u8 voice) { return 0; }
