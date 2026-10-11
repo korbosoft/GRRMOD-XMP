@@ -1,4 +1,5 @@
 /*------------------------------------------------------------------------------
+Copyright (c) 2026 Korbosoft
 Copyright (c) 2010-2024 The GRRLIB Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ------------------------------------------------------------------------------*/
 
-#include "grrmod-mpt.h"
+#include "grrmod-xmp.h"
 #include "GRRMOD_internals.h"
 #include <string.h>
 #include <aesndlib.h>

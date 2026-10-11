@@ -38,7 +38,6 @@ INSTALL_LIB	:=	$(DESTDIR)/lib
 # options for building the library, set to yes to include, anything else to exclude
 #---------------------------------------------------------------------------------
 USE_MOD		:=	yes
-USE_MP3		:=	yes
 
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
@@ -48,11 +47,11 @@ USE_MP3		:=	yes
 # HDR is a list of header files needed for installation
 # CFILES is a list of c files for our project
 #---------------------------------------------------------------------------------
-TARGET		:=	libgrrmod-mpt
+TARGET		:=	libgrrmod-xmp
 BUILD		:=	build
 SOURCES		:=	
 INCLUDES	:=	
-HDR		:=	grrmod-mpt.h
+HDR		:=	grrmod-xmp.h
 CFILES		:=	GRRMOD_core.c
 
 #---------------------------------------------------------------------------------
@@ -69,12 +68,6 @@ CFLAGS		+=	-DHAVE_FCNTL_H -DHAVE_INTTYPES_H -DHAVE_LIMITS_H -DHAVE_MALLOC_H \
 ifeq ($(USE_MOD),yes)
 	CFILES		+=	GRRMOD_MOD.c
 	CFLAGS		+=	
-endif
-ifeq ($(USE_MP3),yes)
-	CFILES		+=	GRRMOD_MP3.c
-	SOURCES		+=	mpg123
-	INCLUDES	+=	mpg123
-	CFLAGS		+=	-DOPT_GENERIC -DREAL_IS_FLOAT
 endif
 
 #---------------------------------------------------------------------------------

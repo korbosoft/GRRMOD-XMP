@@ -3,9 +3,9 @@ exec_prefix=@CMAKE_INSTALL_PREFIX@
 libdir=${exec_prefix}/@CMAKE_INSTALL_LIBDIR@
 includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
 
-Name: grrmod-mpt
+Name: grrmod-xmp
 Description: MOD player library
-URL: https://github.com/korbosoft/grrmod-mpt
+URL: https://github.com/korbosoft/grrmod-xmp
 Version: @PROJECT_VERSION@
 Cflags: -I${includedir}
-Libs: -L${libdir} -lgrrmod-mpt -lopenmpt -lvorbisfile -lvorbis -logg -lmpg123 -lstdc++
+Libs: -L${libdir} -lgrrmod-xmp -llibxmp

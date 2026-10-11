@@ -14,9 +14,6 @@ static const u8 Impact_9_png[] = {
 };
 
 // Mod file
-static const u8 music_mp3[] = {
-    #embed "../data/music.mp3"
-};
 static const u8 music_669[] = {
     #embed "../data/music.669"
 };
@@ -97,8 +94,7 @@ int main(int argc, char **argv) {
     float a = 0.0f;
     s16 Volume = 255;
     s8 SongNum = 0;
-    const PLAYLIST PlayList[] = { {(u8 *)music_mp3, sizeof(music_mp3)},
-                                  {(u8 *)music_669, sizeof(music_669)},
+    const PLAYLIST PlayList[] = { {(u8 *)music_669, sizeof(music_669)},
                                   {(u8 *)music_amf, sizeof(music_amf)},
                                   {(u8 *)music_asy, sizeof(music_asy)},
                                   {(u8 *)music_dsm, sizeof(music_dsm)},

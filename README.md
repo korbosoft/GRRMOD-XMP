@@ -1,25 +1,24 @@
-# grrmod-mpt
+# GRRMOD-XMP
 
 GRRMOD forked to use libopenmpt
 
-<!--[![Actions Status](https://github.com/GRRLIB/GRRMOD/workflows/Continuous%20Integration/badge.svg)](https://github.com/GRRLIB/GRRMOD/actions)
-[![Documentation](https://codedocs.xyz/GRRLIB/GRRMOD.svg)](https://codedocs.xyz/GRRLIB/GRRMOD/)-->
+<!--[![Actions Status](https://github.com/GRRLIB/GRRMOD-XMP/workflows/Continuous%20Integration/badge.svg)](https://github.com/GRRLIB/GRRMOD-XMP/actions)-->
 
 ## Installing GRRMOD
 
-GRRMOD can be installed using Make or CMake.
+GRRMOD-XMP can be installed using CMake.
 
-With Make:
-
-```bash
-cd GRRMOD
-make clean && make && make install
-```
-
-With CMake:
+For Wii:
 
 ```bash
 /opt/devkitpro/portlibs/wii/bin/powerpc-eabi-cmake -B build
+cmake --build build --target install
+```
+
+For Gamecube:
+
+```bash
+/opt/devkitpro/portlibs/gamecube/bin/powerpc-eabi-cmake -B build
 cmake --build build --target install
 ```
 

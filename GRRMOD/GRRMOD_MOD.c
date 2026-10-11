@@ -22,7 +22,7 @@ THE SOFTWARE.
 ------------------------------------------------------------------------------*/
 
 #include "GRRMOD_internals.h"
-#include <libopenmpt/libopenmpt.h>
+#include <xmp.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -33,7 +33,7 @@ typedef struct _GRRMOD_DATA {
 } GRRMOD_DATA;
 
 static GRRMOD_DATA MusicData = {};
-static openmpt_module *mod = NULL;   /**< Module structure. */
+static xmp_context opaque = NULL;   /**< xmp context structure. */
 
 static bool paused = false;
 static bool isStereo;
@@ -73,6 +73,14 @@ s8 GRRMOD_MOD_Init(bool stereo) {
     if (MusicData.SampleRate == 0) {
         MusicData.SampleRate = 32000;
     }
+
+    if (opaque == NULL) {
+        opaque = xmp_create_context();
+        if (opaque == NULL) {
+            return -1;
+        }
+    }
+
     return 0;
 }
 
@@ -80,68 +88,92 @@ s8 GRRMOD_MOD_Init(bool stereo) {
  * Load a MOD file from memory.
  * @param mem Memory to set.
  * @param size Size of the memory to set.
+ * @see GRRMOD_MOD_Unload
  */
 void GRRMOD_MOD_SetMOD(const void *mem, u64 size) {
-    if(mod != NULL) {
-        GRRMOD_MOD_Unload();
+    if (opaque == NULL) {
+        return;
     }
 
-    mod = openmpt_module_create_from_memory2(mem, size, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    GRRMOD_MOD_Unload();
 
-    if(mod != NULL) {
-        MusicData.SongTitle = strdup(openmpt_module_get_metadata(mod, "title"));
-        MusicData.ModType = strdup(openmpt_module_get_metadata(mod, "type"));
-        openmpt_module_set_repeat_count(mod, -1);
-        openmpt_module_set_render_param(
-            mod,
-            OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH,
-            2
-        );
+    if (opaque == NULL) {
+        opaque = xmp_create_context();
+        if (opaque == NULL) {
+            return;
+        }
+    }
+
+    struct xmp_module_info mi;
+
+    if (xmp_load_module_from_memory(opaque, (void *)mem, size) == 0) {
+        xmp_get_module_info(opaque, &mi);
+
+        if (mi.mod != NULL) {
+            MusicData.SongTitle = strdup(mi.mod->name);
+            MusicData.ModType = strdup(mi.mod->type);
+        }
     }
 }
 
 /**
  * Unload a MOD file.
+ * @see GRRMOD_MOD_Unload
  */
 void GRRMOD_MOD_Unload(void) {
-    if(mod != NULL) {
-        openmpt_module_destroy(mod);
-        mod = NULL;
+    if (opaque != NULL) {
+        xmp_end_player(opaque);
+        xmp_release_module(opaque);
+        xmp_free_context(opaque);
+        opaque = NULL;
     }
-    if(MusicData.ModType != NULL) {
+    if (MusicData.ModType != NULL) {
         free(MusicData.ModType);
         MusicData.ModType = NULL;
     }
-    if(MusicData.SongTitle != NULL) {
+    if (MusicData.SongTitle != NULL) {
         free(MusicData.SongTitle);
         MusicData.SongTitle = NULL;
     }
 }
 
 /**
- * This function starts the specified module playback.
+ * Start the specified module playback.
+ * @see GRRMOD_MOD_Stop
+ * @see GRRMOD_MOD_Pause
  */
 void GRRMOD_MOD_Start(void) {
-    if(mod != NULL) {
-        openmpt_module_set_position_order_row(mod, 0, 0);
+    if (opaque != NULL) {
+        xmp_start_player(opaque, MusicData.SampleRate, isStereo ? 0 : XMP_FORMAT_MONO);
         paused = false;
     }
 }
 
 /**
- * This function stops the currently playing module.
+ * Stop the currently playing module.
+ * @see GRRMOD_MOD_Start
+ * @see GRRMOD_MOD_Pause
  */
 void GRRMOD_MOD_Stop(void) {
-    if(mod != NULL) {
-        openmpt_module_set_position_order_row(mod, 0, 0);
+    if (opaque != NULL) {
+        xmp_end_player(opaque);
         paused = true;
     }
 }
 
 /**
- * This function toggles the playing/paused status of the module.
+ * Toggle the playing/paused status of the module.
+ * @see GRRMOD_MOD_Start
+ * @see GRRMOD_MOD_Stop
  */
 void GRRMOD_MOD_Pause(void) {
+    if (opaque != NULL) {
+        if (paused) {
+            xmp_restart_module(opaque);
+        } else {
+            xmp_stop_module(opaque);
+        }
+    }
     paused = !paused;
 }
 
@@ -165,7 +197,7 @@ u32 GRRMOD_MOD_GetRealVoiceVolume(u8 voice) { return 0; }
  * @param buffer The buffer to update.
  */
 void GRRMOD_MOD_Update(u8 *buffer) {
-    if (mod == NULL || buffer == NULL) {
+    if (opaque == NULL || buffer == NULL) {
         return;
     }
 
@@ -174,26 +206,5 @@ void GRRMOD_MOD_Update(u8 *buffer) {
         return;
     }
 
-    static s16 aligned_buffer[SNDBUFFERSIZE / 2];
-    size_t frames_rendered = 0;
-
-    if (isStereo) {
-        size_t frames_to_render = SNDBUFFERSIZE / 4;
-
-        frames_rendered = openmpt_module_read_interleaved_stereo(mod, MusicData.SampleRate, frames_to_render, aligned_buffer);
-
-        if (frames_rendered < frames_to_render) {
-            memset(aligned_buffer + (frames_rendered * 2), 0, (frames_to_render - frames_rendered) * 4);
-        }
-    } else {
-        size_t frames_to_render = SNDBUFFERSIZE / 2;
-
-        frames_rendered = openmpt_module_read_mono(mod, MusicData.SampleRate, frames_to_render, aligned_buffer);
-
-        if (frames_rendered < frames_to_render) {
-            memset(aligned_buffer + frames_rendered, 0, (frames_to_render - frames_rendered) * 2);
-        }
-    }
-
-    memcpy(buffer, aligned_buffer, SNDBUFFERSIZE);
+    xmp_play_buffer(opaque, buffer, SNDBUFFERSIZE, 0);
 }

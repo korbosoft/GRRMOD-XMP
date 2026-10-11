@@ -1,4 +1,5 @@
 /*------------------------------------------------------------------------------
+Copyright (c) 2026 Korbosoft
 Copyright (c) 2010-2024 The GRRLIB Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -79,23 +80,6 @@ void GRRMOD_MOD_Pause(void);
 char *GRRMOD_MOD_GetSongTitle(void);
 char *GRRMOD_MOD_GetModType(void);
 void GRRMOD_MOD_Update(u8 *buffer);
-
-// MP3 functions
-void GRRMOD_MP3_Register(GRRMOD_FuntionsList *RegFunc);
-s8 GRRMOD_MP3_Init(bool stereo);
-void GRRMOD_MP3_End(void);
-void GRRMOD_MP3_SetMOD(const void *mem, u64 size);
-void GRRMOD_MP3_Unload(void);
-void GRRMOD_MP3_SetFrequency(u32 freq);
-u32 GRRMOD_MP3_GetVoiceFrequency(u8 voice);
-u32 GRRMOD_MP3_GetVoiceVolume(u8 voice);
-u32 GRRMOD_MP3_GetRealVoiceVolume(u8 voice);
-void GRRMOD_MP3_Start(void);
-void GRRMOD_MP3_Stop(void);
-void GRRMOD_MP3_Pause(void);
-char *GRRMOD_MP3_GetSongTitle(void);
-char *GRRMOD_MP3_GetModType(void);
-void GRRMOD_MP3_Update(u8 *buffer);
 
 //==============================================================================
 // C++ footer

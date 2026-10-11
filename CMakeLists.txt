@@ -1,9 +1,8 @@
 cmake_minimum_required(VERSION 3.25)
-project(grrmod-mpt VERSION 0.0.1)
+project(grrmod-xmp VERSION 0.0.1)
 
 option(GRRMOD_INSTALL "Generate the install target" ON)
 option(GRRMOD_USE_MOD "Enable MOD support" ON)
-option(GRRMOD_USE_MP3 "Enable MP3 support" ON)
 
 include(GNUInstallDirs)
 
@@ -12,7 +11,7 @@ find_library(AESND aesnd
   REQUIRED
 )
 
-find_library(OPENMPT openmpt
+find_library(LIBXMP xmp
   PATHS "${OGC_ROOT}/../portlibs/ppc/lib/"
   REQUIRED
 )
@@ -22,29 +21,22 @@ if(GRRMOD_USE_MOD)
     "${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/GRRMOD_MOD.c"
   )
 endif()
-if(GRRMOD_USE_MP3)
-  file(GLOB MP3_SRC_FILES
-    "${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/GRRMOD_MP3.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/mpg123/*.c"
-  )
-endif()
 
-add_library(grrmod-mpt STATIC)
+add_library(grrmod-xmp STATIC)
 
-target_compile_options(grrmod-mpt
+target_compile_options(grrmod-xmp
   PRIVATE
   -Wall
   -Wunused
 )
 
-target_sources(grrmod-mpt
+target_sources(grrmod-xmp
   PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/GRRMOD_core.c"
   "${MOD_SRC_FILES}"
-  "${MP3_SRC_FILES}"
 )
 
-target_compile_options(grrmod-mpt PRIVATE
+target_compile_options(grrmod-xmp PRIVATE
   -DHAVE_FCNTL_H -DHAVE_INTTYPES_H -DHAVE_LIMITS_H -DHAVE_MALLOC_H
   -DHAVE_MEMCMP -DHAVE_SETENV -DHAVE_SNPRINTF -DHAVE_STDINT_H
   -DHAVE_STDLIB_H -DHAVE_STRCASECMP -DHAVE_STRDUP -DHAVE_STRINGS_H
@@ -54,41 +46,33 @@ target_compile_options(grrmod-mpt PRIVATE
   -DHAVE_STDIO_H -DHAVE_SYS_SIGNAL_H -DHAVE_SYS_PARAM_H -DHAVE_STRERROR
   -DHAVE_SYS_RESOURCE_H
 )
-if(GRRMOD_USE_MP3)
-  target_compile_options(grrmod-mpt PRIVATE
-    -DOPT_GENERIC
-    -DREAL_IS_FLOAT
-  )
-endif()
 
-target_include_directories(grrmod-mpt
+target_include_directories(grrmod-xmp
   PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/GRRMOD"
   "$<BUILD_INTERFACE:${OGC_ROOT}/../portlibs/ppc/include>"
-  PRIVATE
-  "${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/mpg123"
 )
 
-target_link_libraries(grrmod-mpt
+target_link_libraries(grrmod-xmp
   PUBLIC
   ${AESND}
-  ${OPENMPT}
+  ${LIBXMP}
 )
 
 if(GRRMOD_INSTALL)
 
-  configure_file(grrmod-mpt.pc.in ${CMAKE_BINARY_DIR}/grrmod-mpt.pc @ONLY)
+  configure_file(grrmod-xmp.pc.in ${CMAKE_BINARY_DIR}/grrmod-xmp.pc @ONLY)
 
-  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/grrmod-mpt.h
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/GRRMOD/grrmod-xmp.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   )
 
-  install(FILES ${CMAKE_BINARY_DIR}/grrmod-mpt.pc
+  install(FILES ${CMAKE_BINARY_DIR}/grrmod-xmp.pc
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
   )
 
   install(
-    TARGETS grrmod-mpt EXPORT grrmod-mpt-targets
+    TARGETS grrmod-xmp EXPORT grrmod-xmp-targets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
 
