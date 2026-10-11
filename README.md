@@ -1,6 +1,6 @@
 # GRRMOD-XMP
 
-GRRMOD forked to use libopenmpt
+GRRMOD forked to use libxmp
 
 <!--[![Actions Status](https://github.com/GRRLIB/GRRMOD-XMP/workflows/Continuous%20Integration/badge.svg)](https://github.com/GRRLIB/GRRMOD-XMP/actions)-->
 
