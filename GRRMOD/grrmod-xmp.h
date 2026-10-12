@@ -61,6 +61,7 @@ void GRRMOD_Stop(void);
 void GRRMOD_Pause(void);
 char *GRRMOD_GetSongTitle(void);
 char *GRRMOD_GetModType(void);
+u32 GRRMOD_GetLoopCount(void);
 
 #ifdef _GRRMOD_DEBUG
 u32 GRRMOD_MixingTime(void);

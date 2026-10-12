@@ -61,6 +61,7 @@ typedef struct GRRMOD_FuntionsList {
     void (*Pause)(void);
     char *(*GetSongTitle)(void);
     char *(*GetModType)(void);
+    u32 (*GetLoopCount)(void);
     void (*Update)(u8 *buffer);
 } GRRMOD_FuntionsList;
 
@@ -79,6 +80,7 @@ void GRRMOD_MOD_Stop(void);
 void GRRMOD_MOD_Pause(void);
 char *GRRMOD_MOD_GetSongTitle(void);
 char *GRRMOD_MOD_GetModType(void);
+u32 GRRMOD_MOD_GetLoopCount(void);
 void GRRMOD_MOD_Update(u8 *buffer);
 
 //==============================================================================

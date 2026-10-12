@@ -194,6 +194,13 @@ char *GRRMOD_GetModType(void) {
 }
 
 /**
+ * Get the loop count.
+ */
+u32 GRRMOD_GetLoopCount(void) {
+    return RegFunc.GetLoopCount();
+}
+
+/**
  * Set the frequency. Only 32000Hz and 48000Hz are available.
  * @param freq Frequency to set in Hz.
  */

@@ -56,6 +56,7 @@ void GRRMOD_MOD_Register(GRRMOD_FuntionsList *RegFunc) {
     RegFunc->Pause = GRRMOD_MOD_Pause;
     RegFunc->GetSongTitle = GRRMOD_MOD_GetSongTitle;
     RegFunc->GetModType = GRRMOD_MOD_GetModType;
+    RegFunc->GetLoopCount = GRRMOD_MOD_GetLoopCount;
     RegFunc->Update = GRRMOD_MOD_Update;
 }
 
@@ -71,14 +72,13 @@ s8 GRRMOD_MOD_Init(bool stereo) {
     isStereo = stereo;
     paused = false;
     if (MusicData.SampleRate == 0) {
-        MusicData.SampleRate = 32000;
+        MusicData.SampleRate = 48000;
     }
 
     if (opaque == NULL) {
         opaque = xmp_create_context();
-        if (opaque == NULL) {
-            return -1;
-        }
+        if (opaque == NULL) return -1;
+
     }
 
     return 0;
@@ -91,17 +91,13 @@ s8 GRRMOD_MOD_Init(bool stereo) {
  * @see GRRMOD_MOD_Unload
  */
 void GRRMOD_MOD_SetMOD(const void *mem, u64 size) {
-    if (opaque == NULL) {
-        return;
-    }
+    if (opaque == NULL) return;
 
     GRRMOD_MOD_Unload();
 
     if (opaque == NULL) {
         opaque = xmp_create_context();
-        if (opaque == NULL) {
-            return;
-        }
+        if (opaque == NULL) return;
     }
 
     struct xmp_module_info mi;
@@ -181,25 +177,34 @@ char *GRRMOD_MOD_GetSongTitle(void) { return MusicData.SongTitle; }
 char *GRRMOD_MOD_GetModType(void) { return MusicData.ModType; }
 
 /**
+ * Get the loop count.
+ */
+u32 GRRMOD_MOD_GetLoopCount(void) {
+    if (opaque == NULL) return 0;
+
+    struct xmp_frame_info mi;
+    xmp_get_frame_info(opaque, &mi);
+
+    return mi.loop_count;
+}
+
+/**
  * Set the frequency.
  * @param freq Frequency to set in Hz.
  */
 void GRRMOD_MOD_SetFrequency(u32 freq) {
-    MusicData.SampleRate = (freq > 0) ? freq : 32000;
+    MusicData.SampleRate = (freq > 0) ? freq : 48000;
 }
 
 u32 GRRMOD_MOD_GetVoiceFrequency(u8 voice) { return 0; }
 u32 GRRMOD_MOD_GetVoiceVolume(u8 voice) { return 0; }
 u32 GRRMOD_MOD_GetRealVoiceVolume(u8 voice) { return 0; }
-
 /**
  * Set a buffer to update. This routine should be called on a regular basis to update the sound.
  * @param buffer The buffer to update.
  */
 void GRRMOD_MOD_Update(u8 *buffer) {
-    if (opaque == NULL || buffer == NULL) {
-        return;
-    }
+    if (opaque == NULL || buffer == NULL) return;
 
     if (paused) {
         memset(buffer, 0, SNDBUFFERSIZE);
